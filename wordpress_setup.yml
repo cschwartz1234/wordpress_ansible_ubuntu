@@ -1,0 +1,60 @@
+---
+- name: Set up WordPress on Web Server
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+
+    - name: Install PHP 8.1 and required modules
+      apt:
+        name:
+          - php8.1
+          - libapache2-mod-php8.1
+          - php8.1-mysql
+        state: present
+
+    - name: Enable PHP 8.1 module in Apache
+      apache2_module:
+        state: present
+        name: php8.1
+      ignore_errors: yes
+
+    - name: Install MySQL client on the Web Server
+      apt:
+        name: mysql-client
+        state: present
+
+    - name: Download WordPress
+      get_url:
+        url: https://wordpress.org/latest.tar.gz
+        dest: /tmp/wordpress.tar.gz
+        validate_certs: yes
+
+    - name: Extract WordPress
+      unarchive:
+        src: /tmp/wordpress.tar.gz
+        dest: /var/www/html/
+        remote_src: yes
+        creates: /var/www/html/wordpress
+
+    - name: Update Apache2 site configuration to set DocumentRoot to WordPress directory
+      lineinfile:
+        path: /etc/apache2/sites-available/000-default.conf
+        regexp: '^\s*DocumentRoot'
+        line: 'DocumentRoot /var/www/html/wordpress'
+      notify: restart apache2
+
+    - name: Run custom script to update wp-config.php
+      script: update_wp_config.py
+      args:
+        executable: /usr/bin/python3
+
+  handlers:
+    - name: restart apache2
+      service:
+        name: apache2
+        state: restarted
+

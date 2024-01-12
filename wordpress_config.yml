@@ -1,0 +1,17 @@
+- name: Copy and execute the updated Python script to update wp-config.php
+  hosts: webservers
+  become: yes
+  vars:
+    script_path: "/tmp/update_wp_config.py"
+
+  tasks:
+    - name: Copy the Python script to the server
+      ansible.builtin.copy:
+        src: update_wp_config.py
+        dest: "{{ script_path }}"
+        mode: '0755'
+
+    - name: Execute the Python script to update wp-config.php
+      ansible.builtin.command:
+        cmd: "python3 {{ script_path }}"
+

@@ -1,0 +1,36 @@
+- hosts: dbservers
+  become: yes
+  vars:
+    new_mysql_user: "ansible_admin"
+    new_mysql_password: "XXXXX"  # Change to a strong, unique password
+    wp_db_name: "wordpress_db"
+    wp_db_user: "wpuser"
+    wp_db_password: "XXXXX"  # Change to a strong, unique password
+
+  tasks:
+    - name: Create a new MySQL user for Ansible with remote access
+      mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: "{{ new_mysql_user }}"
+        password: "{{ new_mysql_password }}"
+        host: '%'
+        priv: '*.*:ALL,GRANT'
+        state: present
+
+    - name: Create WordPress database
+      mysql_db:
+        login_user: "{{ new_mysql_user }}"
+        login_password: "{{ new_mysql_password }}"
+        name: "{{ wp_db_name }}"
+        state: present
+
+    - name: Create WordPress user with remote access
+      mysql_user:
+        login_user: "{{ new_mysql_user }}"
+        login_password: "{{ new_mysql_password }}"
+        name: "{{ wp_db_user }}"
+        password: "{{ wp_db_password }}"
+        host: '%'
+        priv: "{{ wp_db_name }}.*:ALL"
+        state: present
+
